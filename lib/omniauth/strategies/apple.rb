@@ -2,6 +2,7 @@
 
 require 'omniauth-oauth2'
 require 'net/https'
+require 'jwt'
 
 module OmniAuth
   module Strategies
@@ -30,7 +31,8 @@ module OmniAuth
       end
 
       extra do
-        id_token = request.params['id_token'] || access_token&.params&.dig('id_token')
+        id_token = request.params['id_token'] || access_token.try(:params).try(:dig, 'id_token')
+        if id_token.nil? then return end
         prune!(raw_info: {id_info: id_info, user_info: user_info, id_token: id_token})
       end
 
