@@ -57,23 +57,13 @@ module OmniAuth
       end
 
       def id_info
-        @id_info ||= if request.params&.key?('id_token') || access_token&.params&.key?('id_token')
+        @id_info ||= if request.params.try(:key?, 'id_token') || access_token.try(:params).try(:key?, 'id_token')
                        id_token = request.params['id_token'] || access_token.params['id_token']
-                       jwt_options = {
-                         verify_iss: true,
-                         iss: 'https://appleid.apple.com',
-                         verify_iat: true,
-                         verify_aud: true,
-                         aud: [options.client_id].concat(options.authorized_client_ids),
-                         algorithms: ['RS256'],
-                         jwks: fetch_jwks
-                       }
-                       payload, _header = ::JWT.decode(id_token, nil, true, jwt_options)
-                       verify_nonce!(payload)
+		                   jwt_data = id_token.split(".")
+		                   payload = JWT::JSON.parse(JWT::Base64.url_decode(jwt_data[1]))
                        payload
                      end
       end
-
       def fetch_jwks
         uri = URI.parse('https://appleid.apple.com/auth/keys')
         response = Net::HTTP.get_response(uri)
